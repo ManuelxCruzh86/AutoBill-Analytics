@@ -5,10 +5,10 @@ from pdf2image import convert_from_path
 from PIL import Image
 import os
 
-# Ruta a tesseract.exe (ajústala si estás en otro SO o la instalaste en otra ubicación)
+# Ruta a tesseract.exe
 pytesseract.pytesseract.tesseract_cmd = r'C:\Program Files\Tesseract-OCR\tesseract.exe'
 
-# Ajusta esta ruta a donde descomprimiste Poppler
+# Ruta de Poppler
 POPPLER_PATH = r"C:\Poppler\poppler-24.08.0\Library\bin"
 
 def extract_text_from_image(image_path):

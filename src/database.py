@@ -3,12 +3,12 @@
 import sqlite3
 import os
 
-# Ruta absoluta a la base de datos en la carpeta "data"
+# Ruta de base de datos en data
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 DATA_DIR = os.path.join(BASE_DIR, "data")
 DB_PATH = os.path.join(DATA_DIR, "facturas.db")
 
-# Crear la carpeta "data" si no existe
+# Crear la carpeta data si no existe
 if not os.path.exists(DATA_DIR):
     os.makedirs(DATA_DIR)
 
@@ -54,3 +54,21 @@ def insert_factura(data):
         print("⚠️ Factura duplicada. No se guardó.")
     finally:
         conn.close()
+
+# Verificar si ya existe la factura
+def factura_exists(data):
+    conn = sqlite3.connect(DB_PATH)
+    cursor = conn.cursor()
+
+    cursor.execute("""
+        SELECT COUNT(*) FROM facturas 
+        WHERE rfc = ? AND fecha = ? AND total = ?
+    """, (
+        data.get("rfc"),
+        data.get("fecha"),
+        data.get("total")
+    ))
+
+    result = cursor.fetchone()[0]
+    conn.close()
+    return result > 0
