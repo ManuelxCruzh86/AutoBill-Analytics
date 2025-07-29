@@ -4,6 +4,8 @@ import os
 from ocr_reader import extract_text_from_file
 from extractor import parse_invoice_data
 from database import create_table, insert_factura
+from export_csv import export_to_csv
+
 
 """ def process_invoice(file_path):
     print(f"Procesando: {file_path}")
@@ -31,6 +33,9 @@ def main():
 
     # Guardar en base de datos
     insert_factura(data)
+
+    print("Exportando a CSV para Power BI...")
+    export_to_csv()
 
 if __name__ == "__main__":
     main()

@@ -1,8 +1,20 @@
+# OCR y PDF
 pytesseract
 pdf2image
 pillow
+
+# Procesamiento visual
 opencv-python
-python-docx
+
+# NLP y texto
 spacy
+python-docx
+
+# Análisis de datos
 pandas
+
+# Bases de datos
 sqlalchemy
+
+# Exportación (si usas Excel)
+openpyxl
