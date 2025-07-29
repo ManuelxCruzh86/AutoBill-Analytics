@@ -54,3 +54,21 @@ def insert_factura(data):
         print("⚠️ Factura duplicada. No se guardó.")
     finally:
         conn.close()
+
+# Verificar si ya existe la factura
+def factura_exists(data):
+    conn = sqlite3.connect(DB_PATH)
+    cursor = conn.cursor()
+
+    cursor.execute("""
+        SELECT COUNT(*) FROM facturas 
+        WHERE rfc = ? AND fecha = ? AND total = ?
+    """, (
+        data.get("rfc"),
+        data.get("fecha"),
+        data.get("total")
+    ))
+
+    result = cursor.fetchone()[0]
+    conn.close()
+    return result > 0

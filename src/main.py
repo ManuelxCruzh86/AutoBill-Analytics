@@ -1,9 +1,10 @@
 # src/main.py
 
 import os
+import shutil
 from ocr_reader import extract_text_from_file
 from extractor import parse_invoice_data
-from database import create_table, insert_factura
+from database import create_table, insert_factura, factura_exists
 from export_csv import export_to_csv
 
 def abrir_powerbi():
@@ -15,30 +16,40 @@ def abrir_powerbi():
     except Exception as e:
         print("⚠️ No se pudo abrir Power BI automáticamente:", e)
 
-
+def save_invoice_to_db(data):
+    if factura_exists(data): 
+        print(f"🔁 Factura ya existente (folio: {data.get('folio')}, emisor: {data.get('emisor')}). Se omite.")
+    else:
+        insert_factura(data)
+        print(f"✅ Factura guardada: {data.get('folio')}")
 
 def main():
     print("📥 Procesando archivos de entrada...")
 
-    input_folder = "input"
-    if not os.path.exists(input_folder):
-        os.makedirs(input_folder)
-        print(f"⚠️ La carpeta '{input_folder}' no existía y fue creada. Agrega archivos para procesar.")
+    data_folder = "data"
+    processed_folder = "procesados"
+
+    if not os.path.exists(data_folder):
+        os.makedirs(data_folder)
+        print(f"⚠️ La carpeta '{data_folder}' no existía y fue creada. Agrega archivos para procesar.")
         return
 
-    for file_name in os.listdir(input_folder):
-        file_path = os.path.join(input_folder, file_name)
-      
+    if not os.path.exists(processed_folder):
+        os.makedirs(processed_folder)
+
+    for file_name in os.listdir(data_folder):
+        file_path = os.path.join(data_folder, file_name)
 
         if not file_name.lower().endswith(('.pdf', '.png', '.jpg', '.jpeg')):
             continue
 
         print(f"📄 Leyendo archivo: {file_name}")
         text = extract_text_from_file(file_path)
-        data = extract_invoice_data(text)
+        invoice_data = parse_invoice_data(text)
 
-        if data:
-            save_invoice_to_db(data)
+        if invoice_data:
+            save_invoice_to_db(invoice_data)
+            shutil.move(file_path, os.path.join(processed_folder, file_name))
         else:
             print(f"❌ No se pudo extraer información válida de: {file_name}")
 
@@ -46,10 +57,10 @@ def main():
 
     print("📤 Exportando datos a CSV...")
     export_to_csv()
-
     print("✅ Archivo Excel generado correctamente.")
-    
-    abrir_powerbi()
 
+    abrir_powerbi()
+ 
 if __name__ == "__main__":
+    create_table()  
     main()
