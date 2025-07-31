@@ -17,17 +17,22 @@ def create_table():
     cursor = conn.cursor()
 
     cursor.execute("""
-    CREATE TABLE IF NOT EXISTS facturas (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        proveedor TEXT,
-        rfc TEXT,
-        fecha TEXT,
-        subtotal TEXT,
-        iva TEXT,
-        total TEXT,
-        UNIQUE(rfc, fecha, total)
-    )
-    """)
+CREATE TABLE IF NOT EXISTS facturas (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    proveedor TEXT,
+    rfc_emisor TEXT,
+    rfc_receptor TEXT,
+    fecha TEXT,
+    dia TEXT,
+    mes TEXT,
+    anio TEXT,
+    subtotal TEXT,
+    iva TEXT,
+    total TEXT,
+    UNIQUE(rfc_emisor, rfc_receptor, fecha, total)
+)
+""")
+
 
     conn.commit()
     conn.close()
@@ -38,16 +43,22 @@ def insert_factura(data):
 
     try:
         cursor.execute("""
-            INSERT INTO facturas (proveedor, rfc, fecha, subtotal, iva, total)
-            VALUES (?, ?, ?, ?, ?, ?)
-        """, (
-            data.get("proveedor"),
-            data.get("rfc"),
-            data.get("fecha"),
-            data.get("subtotal"),
-            data.get("iva"),
-            data.get("total")
-        ))
+    INSERT INTO facturas (
+        proveedor, rfc_emisor, rfc_receptor, fecha, dia, mes, anio, subtotal, iva, total
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+""", (
+    data.get("proveedor"),
+    data.get("rfc_emisor"),
+    data.get("rfc_receptor"),
+    data.get("fecha"),
+    data.get("dia"),
+    data.get("mes"),
+    data.get("anio"),
+    data.get("subtotal"),
+    data.get("iva"),
+    data.get("total")
+))
+
         conn.commit()
         print("✅ Factura guardada en la base de datos.")
     except sqlite3.IntegrityError:
@@ -61,13 +72,15 @@ def factura_exists(data):
     cursor = conn.cursor()
 
     cursor.execute("""
-        SELECT COUNT(*) FROM facturas 
-        WHERE rfc = ? AND fecha = ? AND total = ?
-    """, (
-        data.get("rfc"),
-        data.get("fecha"),
-        data.get("total")
-    ))
+    SELECT COUNT(*) FROM facturas 
+    WHERE rfc_emisor = ? AND rfc_receptor = ? AND fecha = ? AND total = ?
+""", (
+    data.get("rfc_emisor"),
+    data.get("rfc_receptor"),
+    data.get("fecha"),
+    data.get("total")
+))
+
 
     result = cursor.fetchone()[0]
     conn.close()
