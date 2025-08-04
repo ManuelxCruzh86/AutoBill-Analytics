@@ -10,7 +10,7 @@ from export_csv import export_to_csv
 def abrir_powerbi():
     try:
         script_dir = os.path.dirname(os.path.abspath(__file__))
-        plantilla_path = os.path.join(script_dir, "..", "plantillas", "plantilla.pbix")
+        plantilla_path = os.path.join(script_dir, "..", "plantillas", "PlantillaAutobill.pbix")
         os.startfile(plantilla_path)
         print("🟢 Power BI abierto. Solo presiona 'Actualizar' para ver los nuevos datos.")
     except Exception as e:
