@@ -2,10 +2,12 @@
 
 import os
 import shutil
+import csv
 from ocr_reader import extract_text_from_file
 from extractor import parse_invoice_data
 from database import create_table, insert_factura, factura_exists
 from export_csv import export_to_csv
+
 
 def abrir_powerbi():
     try:
@@ -16,6 +18,7 @@ def abrir_powerbi():
     except Exception as e:
         print("⚠️ No se pudo abrir Power BI automáticamente:", e)
 
+
 def save_invoice_to_db(data):
     if factura_exists(data): 
         print(f"🔁 Factura ya existente (folio: {data.get('folio')}, emisor: {data.get('emisor')}). Se omite.")
@@ -23,11 +26,14 @@ def save_invoice_to_db(data):
         insert_factura(data)
         print(f"✅ Factura guardada: {data.get('folio')}")
 
+
 def main():
     print("📥 Procesando archivos de entrada...")
 
     data_folder = "data"
     processed_folder = "procesados"
+    entrenamiento_csv = os.path.join(data_folder, "datos_entrenamiento.csv")
+    datos_entrenamiento = []
 
     if not os.path.exists(data_folder):
         os.makedirs(data_folder)
@@ -45,22 +51,36 @@ def main():
 
         print(f"📄 Leyendo archivo: {file_name}")
         text = extract_text_from_file(file_path)
-        invoice_data = parse_invoice_data(text)
 
+        # Guardar texto crudo para entrenamiento
+        datos_entrenamiento.append({
+            "nombre_archivo": file_name,
+            "texto_crudo": text.replace("\n", " ")
+        })
+
+        invoice_data = parse_invoice_data(text)
         if invoice_data:
             save_invoice_to_db(invoice_data)
             shutil.move(file_path, os.path.join(processed_folder, file_name))
         else:
             print(f"❌ No se pudo extraer información válida de: {file_name}")
 
-    print("✅ Extracción completada.")
+    # Guardar CSV de entrenamiento
+    with open(entrenamiento_csv, mode="w", encoding="utf-8", newline="") as archivo_csv:
+        campos = ["nombre_archivo", "texto_crudo"]
+        writer = csv.DictWriter(archivo_csv, fieldnames=campos)
+        writer.writeheader()
+        writer.writerows(datos_entrenamiento)
+
+    print(f"✅ Se generó el archivo {entrenamiento_csv} con {len(datos_entrenamiento)} textos crudos.")
 
     print("📤 Exportando datos a CSV...")
     export_to_csv()
     print("✅ Archivo Excel generado correctamente.")
 
     abrir_powerbi()
- 
+
+
 if __name__ == "__main__":
-    create_table()  
+    create_table()
     main()

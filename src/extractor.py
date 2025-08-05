@@ -58,4 +58,7 @@ def parse_invoice_data(text):
     if proveedor_match:
         data['proveedor'] = proveedor_match.group(1).strip()
 
+    # Guardar el texto OCR crudo para ML
+    data["ocr_texto"] = text
+
     return data
