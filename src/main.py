@@ -3,6 +3,7 @@
 import os
 import shutil
 import csv
+import joblib
 from ocr_reader import extract_text_from_file
 from extractor import parse_invoice_data
 from database import create_table, insert_factura, factura_exists
@@ -52,27 +53,50 @@ def main():
         print(f"📄 Leyendo archivo: {file_name}")
         text = extract_text_from_file(file_path)
 
-        # Guardar texto crudo para entrenamiento
+        invoice_data = parse_invoice_data(text)
+
+        # Guardar texto crudo + datos extraídos para entrenamiento supervisado
         datos_entrenamiento.append({
             "nombre_archivo": file_name,
-            "texto_crudo": text.replace("\n", " ")
+            "texto_crudo": text.replace("\n", " "),
+            "rfc_emisor": invoice_data.get("rfc_emisor", ""),
+            "rfc_receptor": invoice_data.get("rfc_receptor", ""),
+            "subtotal": invoice_data.get("subtotal", ""),      # <--- Agrega esto
+            "iva": invoice_data.get("iva", ""),                # <--- Y esto
+            "total": invoice_data.get("total", ""),
+            "fecha": invoice_data.get("fecha", ""),
+            "folio": invoice_data.get("folio", "")
         })
 
-        invoice_data = parse_invoice_data(text)
         if invoice_data:
             save_invoice_to_db(invoice_data)
             shutil.move(file_path, os.path.join(processed_folder, file_name))
         else:
             print(f"❌ No se pudo extraer información válida de: {file_name}")
 
-    # Guardar CSV de entrenamiento
+    # Guardar CSV de entrenamiento (acumulativo)
+    campos = ["nombre_archivo", "texto_crudo", "rfc_emisor", "rfc_receptor", "subtotal", "iva", "total", "fecha", "folio"]
+    datos_previos = []
+
+    # Si el archivo existe, lee los datos previos
+    if os.path.exists(entrenamiento_csv):
+        with open(entrenamiento_csv, mode="r", encoding="utf-8", newline="") as archivo_csv:
+            reader = csv.DictReader(archivo_csv)
+            datos_previos = list(reader)
+
+    # Opcional: Evita duplicados por nombre_archivo
+    archivos_existentes = {d["nombre_archivo"] for d in datos_previos}
+    nuevos_datos = [d for d in datos_entrenamiento if d["nombre_archivo"] not in archivos_existentes]
+
+    # Une los datos previos con los nuevos
+    datos_finales = datos_previos + nuevos_datos
+
     with open(entrenamiento_csv, mode="w", encoding="utf-8", newline="") as archivo_csv:
-        campos = ["nombre_archivo", "texto_crudo"]
         writer = csv.DictWriter(archivo_csv, fieldnames=campos)
         writer.writeheader()
-        writer.writerows(datos_entrenamiento)
+        writer.writerows(datos_finales)
 
-    print(f"✅ Se generó el archivo {entrenamiento_csv} con {len(datos_entrenamiento)} textos crudos.")
+    print(f"✅ Se generó el archivo {entrenamiento_csv} con {len(datos_finales)} textos crudos.")
 
     print("📤 Exportando datos a CSV...")
     export_to_csv()
